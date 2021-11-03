@@ -55,7 +55,7 @@ end
 --- Does a line trace
 -- @param Vector start Start position
 -- @param Vector endpos End position
--- @param Entity|table|function|nil filter Entity/array of entities to filter, or a function callback with an entity arguement that returns whether the trace should hit
+-- @param Entity|table|function|nil filter Entity/array of entities to filter, or a function callback with an entity argument that returns whether the trace should hit
 -- @param number? mask Trace mask
 -- @param number? colgroup The collision group of the trace
 -- @param boolean? ignworld Whether the trace should ignore world
@@ -89,7 +89,7 @@ end
 -- @param Vector endpos End position
 -- @param Vector minbox Lower box corner
 -- @param Vector maxbox Upper box corner
--- @param Entity|table|function|nil filter Entity/array of entities to filter, or a function callback with an entity arguement that returns whether the trace should hit
+-- @param Entity|table|function|nil filter Entity/array of entities to filter, or a function callback with an entity argument that returns whether the trace should hit
 -- @param number? mask Trace mask
 -- @param number? colgroup The collision group of the trace
 -- @param boolean? ignworld Whether the trace should ignore world
@@ -172,6 +172,23 @@ end
 -- @return number Contents bitflag, see the CONTENTS enums
 function trace_library.pointContents(position)
 	return util.PointContents(vunwrap(position))
+end
+
+--- Calculates the aim vector from a 2D screen position. This is essentially a generic version of input.screenToVector, where you can define the view angles and screen size manually.
+-- @param Angle viewAngles View angles
+-- @param number viewFOV View field of view
+-- @param number x X position on the screen
+-- @param number y Y position on the screen
+-- @param number screenWidth Screen width
+-- @param number screenHeight Screen height
+-- @return Vector The aim vector
+function trace_library.aimVector(viewAngles, viewFOV, x, y, screenWidth, screenHeight)
+	checkluatype(viewFOV, TYPE_NUMBER)
+	checkluatype(x, TYPE_NUMBER)
+	checkluatype(y, TYPE_NUMBER)
+	checkluatype(screenWidth, TYPE_NUMBER)
+	checkluatype(screenHeight, TYPE_NUMBER)
+	return vwrap(util.AimVector(aunwrap(viewAngles), viewFOV, x, y, screenWidth, screenHeight))
 end
 
 end

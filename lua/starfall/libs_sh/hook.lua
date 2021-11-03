@@ -78,6 +78,15 @@ if SERVER then
 	-- @param Entity ent The entity that was picked up
 	add("OnPhysgunPickup")
 
+	--- Called when a player unfreezes an object
+	-- @name PlayerUnfrozeObject
+	-- @class hook
+	-- @server
+	-- @param Player ply The player who has unfrozen an entity
+	-- @param Entity ent The unfrozen entity
+	-- @param PhysObj physobj The physics object of the unfrozen entity 
+	add("PlayerUnfrozeObject")
+
 	--- Called when a player dies
 	-- @name PlayerDeath
 	-- @class hook
@@ -278,6 +287,18 @@ else
 	-- @client
 	-- @param Player ply Player who stopped talking
 	add("PlayerEndVoice")
+
+	--- Called when the player opens the context menu
+	-- @name OnContextMenuOpen
+	-- @class hook
+	-- @client
+	add("OnContextMenuOpen")
+
+	--- Called when the player closes the context menu
+	-- @name OnContextMenuClose
+	-- @class hook
+	-- @client
+	add("OnContextMenuClose")
 end
 
 -- Shared hooks

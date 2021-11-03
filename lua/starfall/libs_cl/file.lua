@@ -177,7 +177,7 @@ local file_methods, file_meta, wrap, unwrap = instance.Types.File.Methods, insta
 
 --- Opens and returns a file
 -- @param string path Filepath relative to data/sf_filedata/.
--- @param string mode The file mode to use. See lua manual for explaination
+-- @param string mode The file mode to use. See lua manual for explanation
 -- @return File? File object or nil if it failed
 function file_library.open(path, mode)
 	checkpermission (instance, path, "file.open")
@@ -220,10 +220,9 @@ local function checkExtension(filename)
 	if not allowedExtensions[string.GetExtensionFromFilename(filename)] then SF.Throw("Invalid file extension!", 3) end
 end
 
---- Writes to a file
+--- Writes to a file. Throws an error if it failed to write
 -- @param string path Filepath relative to data/sf_filedata/.
 -- @param string data The data to write
--- @return boolean? True if OK, nil if error
 function file_library.write(path, data)
 	checkpermission (instance, path, "file.write")
 	checkluatype (path, TYPE_STRING)
@@ -344,7 +343,7 @@ end
 
 --- Enumerates a directory relative to gmod
 -- @param string path The folder to enumerate, relative to garrysmod.
--- @param string? sorting Optional sorting arguement. Either nameasc, namedesc, dateasc, datedesc
+-- @param string? sorting Optional sorting argument. Either nameasc, namedesc, dateasc, datedesc
 -- @return table Table of file names
 -- @return table Table of directory names
 function file_library.findInGame(path, sorting)

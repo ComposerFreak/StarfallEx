@@ -673,11 +673,13 @@ end
 -- @return boolean True if valid, false if not
 function ents_methods:isValid()
 	local ent = eunwrap(self)
-	if ent and ent:IsValid() then
-		return true
-	else
-		return false
+	if ent then
+		local isValid = ent.IsValid
+		if isValid then
+			return isValid(ent)
+		end
 	end
+	return false
 end
 
 --- Checks if an entity is a player.
@@ -751,7 +753,7 @@ end
 function ents_methods:getQuotaUsed()
 	local ent = getent(self)
 	if not ent.Starfall then SF.Throw("The entity isn't a starfall chip", 2) end
-	
+
 	return ent.instance and ent.instance.cpu_total or 0
 end
 
@@ -788,7 +790,7 @@ if SERVER then
 	--- Gets all players the specified starfall errored for.
 	-- This excludes the owner of the starfall chip.
 	-- @server
-	-- @return table A table containg the errored players.
+	-- @return table A table containing the errored players.
 	function ents_methods:getErroredPlayers()
 		local ent = getent(self)
 		if not ent.Starfall then SF.Throw("The entity isn't a starfall chip", 2) end

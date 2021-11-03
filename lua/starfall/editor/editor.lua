@@ -72,7 +72,7 @@ if CLIENT then
 
 	function SF.Editor.init(callback)
 		if SF.Editor.initialized or SF.Editor.editor then return end
-		
+
 		if not SF.Docs then
 			if not SF.WaitingForDocs then
 				local docfile = file.Open("sf_docs.txt", "rb", "DATA")
@@ -142,8 +142,7 @@ if CLIENT then
 	function SF.Editor.renameFile(oldFile, newFile)
 		if file.Exists(newFile, "DATA") then
 			SF.AddNotify(LocalPlayer(), "Failed to rename. File already exists there.", "ERROR", 7, "ERROR1")
-		elseif SF.FileWrite(newFile, file.Read(oldFile)) then
-			file.Delete(oldFile)
+		elseif file.Rename(oldFile, newFile) then
 			SF.AddNotify(LocalPlayer(), "File renamed as " .. newFile .. ".", "GENERIC", 7, "DRIP3")
 			for i = 1, SF.Editor.editor:GetNumTabs() do
 				local ed = SF.Editor.editor:GetTabContent(i)
@@ -225,7 +224,7 @@ if CLIENT then
 	-- @return A table with mainfile name and files
 	function SF.Editor.BuildIncludesTable(mainfile, success, err)
 		if not SF.Editor.initialized then SF.Editor.init(function() SF.Editor.BuildIncludesTable(mainfile, success, err) end) return end
-		
+
 		local openfiles = SF.Editor.getOpenFiles()
 		if not (mainfile and (openfiles[mainfile] or file.Exists("starfall/" .. mainfile, "DATA"))) then
 			mainfile = SF.Editor.getOpenFile() or "main"
@@ -317,10 +316,57 @@ if CLIENT then
 				err("Clientmain not found: " .. clientmain) return
 			end
 
-			success(tbl)
+			SF.Editor.HandlePostProcessing(tbl, ppdata, success, err)
 		else
 			local file = string.match(msg, "(Bad include%: .*)")
 			err(file or msg)
+		end
+	end
+
+	--- Handles post-processing (as part of BuildIncludesTable)
+	function SF.Editor.HandlePostProcessing(list, ppdata, onSuccessSignal, onErrorSignal)
+		if not ppdata.httpincludes then onSuccessSignal(list) return end
+		local files = list.files
+		local usingCache, pendingRequestCount = {}, 0 -- a temporary HTTP in-memory cache
+		-- First stage: Iterate through all http --@include directives in all files and prepare our HTTP queue structure.
+		for fileName, fileUsing in next, ppdata.httpincludes do
+			for _, data in next, fileUsing do
+				local url, name = data[1], data[2]
+				if not usingCache[url] then
+					usingCache[url] = name or true -- prevents duplicate requests to the same URL
+					pendingRequestCount = pendingRequestCount + 1
+				end
+			end
+		end
+		-- Second stage: Once we know the total amount of requests and URLs, we fetch all URLs as HTTP resources.
+		--               Then we wait for all HTTP requests to complete.
+		local function CheckAndUploadIfReady()
+			pendingRequestCount = pendingRequestCount - 1
+			if pendingRequestCount > 0 then return end
+			-- The following should run only once, at the end when there are no more pending HTTP requests:
+			-- Final stage: Substitute all http --@include directives with the contents of their HTTP response.
+			for fileName, fileUsing in next, ppdata.httpincludes do
+				local code = files[fileName]
+				for _, data in next, fileUsing do
+					local url, name = data[1], data[2]
+					local result = usingCache[url]
+					files[name] = result
+				end
+			end
+			onSuccessSignal(list)
+		end
+		for url in next, usingCache do
+			HTTP {
+				method = "GET";
+				url = url;
+				success = function(_, contents)
+					usingCache[url] = contents
+					CheckAndUploadIfReady()
+				end;
+				failed = function(reason)
+					onErrorSignal(string.format("Could not fetch --@include link (due %s): %s", reason, url))
+				end;
+			}
 		end
 	end
 
@@ -362,7 +408,7 @@ if CLIENT then
 			end
 		end
 	end)
-	
+
 	local forceCloseEditor = function()
 		if not SF.Editor.initialized then return end
 		SF.Editor.editor:Close()
@@ -374,13 +420,13 @@ if CLIENT then
 		SF.Editor.editor = nil
 
 	end
-	
+
 	concommand.Add("sf_editor_reload", function()
 		pcall(forceCloseEditor)
 		include("starfall/editor/editor.lua")
 		print("Editor reloaded")
 	end)
-	
+
 	local function initDocs(data)
 		local ok, docs
 		if data then
@@ -450,7 +496,7 @@ elseif SERVER then
 		net.WriteBit(false)
 		net.Broadcast()
 	end
-	
+
 	net.Receive("starfall_docs", function(len, ply)
 		if not ply.SF_SentDocs then
 			ply.SF_SentDocs = true

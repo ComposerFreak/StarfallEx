@@ -150,7 +150,7 @@ function EDITOR:BlockCommentSelection(removecomment)
 			self:SetSelection("--[[" .. self:GetSelection() .. "]]")
 		end
 	elseif mode == 2 then -- Old
-		local comment_char = "%-%-"
+		local comment_char = "%-%- "
 		if removecomment then
 			-- shift-TAB with a selection --
 			local tmp = string_gsub("\n"..self:GetSelection(), "\n"..comment_char, "\n")
@@ -158,7 +158,7 @@ function EDITOR:BlockCommentSelection(removecomment)
 			self:SetSelection(tmp:sub(2))
 		else
 			-- plain TAB with a selection --
-			self:SetSelection(comment_char .. self:GetSelection():gsub("\n", "\n"..comment_char))
+			self:SetSelection("-- "..self:GetSelection():gsub("\n", "\n"..comment_char))
 		end
 	else
 		ErrorNoHalt("Invalid block comment style")
@@ -238,10 +238,10 @@ function EDITOR:SyntaxColorLine(row)
 
 		addToken("comment", self.tokendata)
 	elseif self.multilinestring then
+		local ending = "%]"..string.rep('=',self.multilinestring).."%]"
 		while self.character do -- Find the ending ]]
-			if self:NextPattern(".-%]"..string.rep('=',self.multilinestring).."%]") then
+			if self:NextPattern(ending) then
 				self.multilinestring = nil
-				self:NextCharacter()
 				break
 			end
 			if self.character == "\\" then self:NextCharacter() end
@@ -283,13 +283,14 @@ function EDITOR:SyntaxColorLine(row)
 	local spaces = self:SkipPattern(" *")
 	if spaces then addToken("whitespace", spaces) end
 
-	found = self:NextPattern("local%s*function")  -- local function
+	found = self:NextPattern("local%s*function%s+")  -- local function
 	if found then
-		local l, spaces, f = self.tokendata:match("(local)(%s*)(function)")
+		local l, spaces, f, spaces2 = self.tokendata:match("(local)(%s*)(function)(%s+)")
 
 		addToken("keyword", l)
-		if spaces and #spaces>0 then addToken("whitespace", spaces) end
+		if #spaces>0 then addToken("whitespace", spaces) end
 		addToken("storageType", f) -- Add "function"
+		addToken("whitespace", spaces2)
 
 		self.tokendata = "" -- Reset tokendata
 
@@ -442,7 +443,7 @@ function EDITOR:SyntaxColorLine(row)
 						local pos = self.position -- We are saving that, so we can move tokenizer back
 						local c = self.character
 						local td = self.tokendata
-						if self:NextPattern("%s*%(") then -- we are checking if there is ( after name
+						if self:NextPattern("%s*[({'\"]") then -- we are checking if there is ( after name, or if single parameter function with string literal or table literal
 							tokenname = "function"
 							self.position = pos -- We dont want to move tokenizer as we were just checking without parsing
 							self.character = c
@@ -512,9 +513,9 @@ function EDITOR:SyntaxColorLine(row)
 			end
 		elseif self:NextPattern("%[=*%[") then -- Multiline strings
 			local reps = #self.tokendata:match("%[(=*)%[")
-			self:NextCharacter()
+			local ending = "%]"..string.rep("=",reps).."%]"
 			while self.character do -- Find the ending ]] if it isnt really multline(who does that?! Shame on you!)
-				if self:NextPattern("%]"..string.rep("=",reps).."%]") then
+				if self:NextPattern(ending) then
 					tokenname = "string"
 					break
 				end
@@ -525,8 +526,6 @@ function EDITOR:SyntaxColorLine(row)
 			if tokenname == "" then -- If no ending ]] was found...
 				self.multilinestring = reps
 				tokenname = "string"
-			else
-				self:NextCharacter()
 			end
 			--"string"
 		elseif self.character == '"' then -- Singleline "string"

@@ -265,6 +265,7 @@ end
 --- Checks if the chip is capable of performing an action.
 -- @param string perm The permission id to check
 -- @param any obj Optional object to pass to the permission system.
+-- @return boolean Whether the client has granted the specified permission.
 function builtins_library.hasPermission(perm, obj)
 	checkluatype(perm, TYPE_STRING)
 	if not SF.Permissions.permissionchecks[perm] then SF.Throw("Permission doesn't exist", 2) end
@@ -915,7 +916,7 @@ function builtins_library.pcall(func, ...)
 end
 
 local function xpcall_Callback(err)
-	return {err, debug.traceback(tostring(err), 2)} -- only way to return 2 values; level 2 to branch 
+	return {err, debug.traceback(tostring(err), 2)} -- only way to return 2 values; level 2 to branch
 end
 
 --- Lua's xpcall with SF throw implementation, and a traceback for debugging.
@@ -1072,10 +1073,11 @@ builtins_library.class = SF.Class
 end
 
 --- Mark a file to be included in the upload.
+-- URL is also supported, e.g. --@include http://mydomain.com/myfile as myfile.txt
 -- This is required to use the file in require() and dofile()
 -- @name include
 -- @class directive
--- @param path Path to the file
+-- @param path Path to the file, or URL of the single-file library to be included
 
 --- Mark a directory to be included in the upload.
 -- This is optional to include all files in the directory in require() and dofile()
@@ -1129,4 +1131,3 @@ end
 --- Lets the chip run with no restrictions and the chip owner becomes SF.Superuser. Can only be used in the main file. --@superuser
 -- @name superuser
 -- @class directive
-
